@@ -329,8 +329,15 @@ def shopping_list():
           AND mp.plan_date <= %s
         ORDER BY mp.plan_date
     """, (start_date.isoformat(), end_date.isoformat()))
-
     rows = cur.fetchall()
+
+    cur.execute("""
+        SELECT *
+        FROM shopping_lists
+        ORDER BY created_at DESC
+        LIMIT 10
+    """)
+    saved_lists = cur.fetchall()
 
     cur.close()
     conn.close()
@@ -339,11 +346,9 @@ def shopping_list():
 
     for row in rows:
         ingredients_text = row["ingredients"] or ""
-        lines = ingredients_text.splitlines()
 
-        for line in lines:
+        for line in ingredients_text.splitlines():
             ingredient = line.strip()
-
             if not ingredient:
                 continue
 
@@ -355,9 +360,49 @@ def shopping_list():
         "shopping_list.html",
         ingredients=ingredients,
         rows=rows,
+        saved_lists=saved_lists,
         start_date=start_date,
         end_date=end_date
     )
+
+
+@app.route("/shopping-list/save", methods=["POST"])
+def shopping_list_save():
+    start_date = request.form.get("start_date")
+    end_date = request.form.get("end_date")
+    items = request.form.get("items")
+    memo = request.form.get("memo")
+
+    if not items or not items.strip():
+        return redirect(url_for(
+            "shopping_list",
+            start_date=start_date,
+            end_date=end_date
+        ))
+
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute("""
+        INSERT INTO shopping_lists
+        (start_date, end_date, items, memo)
+        VALUES (%s, %s, %s, %s)
+    """, (
+        start_date,
+        end_date,
+        items.strip(),
+        memo
+    ))
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return redirect(url_for(
+        "shopping_list",
+        start_date=start_date,
+        end_date=end_date
+    ))
 
 
 if __name__ == "__main__":
