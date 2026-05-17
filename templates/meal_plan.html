@@ -5,28 +5,54 @@
 
 <form method="post" class="form-card">
 
+    {% set ns = namespace(categories=[]) %}
+
+    {% for r in recipes %}
+        {% if r.category not in ns.categories %}
+            {% set _ = ns.categories.append(r.category) %}
+        {% endif %}
+    {% endfor %}
+
     {% for day in week %}
     <div class="plan-row">
+
         <div class="plan-date">
             {{ day.date.month }}/{{ day.date.day }}（{{ day.weekday }}）
         </div>
 
         <select name="recipe_{{ day.index }}">
+
             <option value="">未定</option>
-            {% for r in recipes %}
-                <option value="{{ r.id }}"
-                    {% if day.plan and day.plan.recipe_id == r.id %}selected{% endif %}>
-                    {{ r.category }}｜{{ r.title }}
-                </option>
+
+            {% for category in ns.categories %}
+            <optgroup label="{{ category }}">
+
+                {% for r in recipes %}
+                    {% if r.category == category %}
+                    <option value="{{ r.id }}"
+                        {% if day.plan and day.plan.recipe_id == r.id %}selected{% endif %}>
+                        {{ r.title }}
+                    </option>
+                    {% endif %}
+                {% endfor %}
+
+            </optgroup>
             {% endfor %}
+
         </select>
 
-        <input type="text" name="note_{{ day.index }}" placeholder="メモ"
-               value="{{ day.plan.note if day.plan else '' }}">
+        <input
+            type="text"
+            name="note_{{ day.index }}"
+            placeholder="メモ"
+            value="{{ day.plan.note if day.plan else '' }}"
+        >
+
     </div>
     {% endfor %}
 
     <button type="submit">献立を保存</button>
+
 </form>
 
 {% endblock %}
