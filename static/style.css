@@ -231,3 +231,34 @@ pre {
         grid-template-columns: 1fr 1fr;
     }
 }
+
+.star-box {
+    background: #fff0f5;
+    border: 1px solid #f2c6d2;
+    border-radius: 16px;
+    padding: 14px;
+    margin-bottom: 12px;
+}
+
+.stars {
+    display: flex;
+    gap: 6px;
+    font-size: 34px;
+    line-height: 1;
+}
+
+.star {
+    cursor: pointer;
+    color: #d6b1bd;
+    user-select: none;
+}
+
+.star.active {
+    color: #ff7fa3;
+}
+
+.star-label {
+    margin-top: 8px;
+    font-weight: bold;
+    color: #c53f6b;
+}

@@ -11,7 +11,9 @@
     <label>カテゴリー</label>
     <select name="category">
         {% for c in categories %}
-            <option value="{{ c }}" {% if recipe and recipe.category == c %}selected{% endif %}>{{ c }}</option>
+            <option value="{{ c }}" {% if recipe and recipe.category == c %}selected{% endif %}>
+                {{ c }}
+            </option>
         {% endfor %}
     </select>
 
@@ -25,12 +27,19 @@
     <input type="number" name="time_minutes" value="{{ recipe.time_minutes if recipe else '' }}">
 
     <label>やる気レベル</label>
-    <select name="effort_level">
-        <option value="">未設定</option>
-        {% for e in effort_levels %}
-            <option value="{{ e }}" {% if recipe and recipe.effort_level == e %}selected{% endif %}>{{ e }}</option>
-        {% endfor %}
-    </select>
+
+    <input type="hidden" name="effort_level" id="effort_level"
+           value="{{ recipe.effort_level if recipe and recipe.effort_level else '' }}">
+
+    <div class="star-box">
+        <div class="stars" id="stars">
+            <span class="star" data-value="1">☆</span>
+            <span class="star" data-value="2">☆</span>
+            <span class="star" data-value="3">☆</span>
+            <span class="star" data-value="4">☆</span>
+        </div>
+        <div class="star-label" id="star_label">未設定</div>
+    </div>
 
     <label class="check">
         <input type="checkbox" name="is_two_days" {% if recipe and recipe.is_two_days %}checked{% endif %}>
@@ -47,5 +56,60 @@
 
     <button type="submit">保存</button>
 </form>
+
+<script>
+const effortInput = document.getElementById("effort_level");
+const stars = document.querySelectorAll(".star");
+const starLabel = document.getElementById("star_label");
+
+const effortMap = {
+    1: "★1 死んでても作れる",
+    2: "★2 まあ作れる",
+    3: "★3 元気な日だけ",
+    4: "★4 休日専用"
+};
+
+const labelMap = {
+    1: "★☆☆☆ 死んでても作れる",
+    2: "★★☆☆ まあ作れる",
+    3: "★★★☆ 元気な日だけ",
+    4: "★★★★ 休日専用"
+};
+
+function getInitialLevel(value) {
+    if (!value) return 0;
+    if (value.includes("★1")) return 1;
+    if (value.includes("★2")) return 2;
+    if (value.includes("★3")) return 3;
+    if (value.includes("★4")) return 4;
+    return 0;
+}
+
+function setStars(level) {
+    stars.forEach(star => {
+        const value = Number(star.dataset.value);
+        star.textContent = value <= level ? "★" : "☆";
+        star.classList.toggle("active", value <= level);
+    });
+
+    if (level === 0) {
+        effortInput.value = "";
+        starLabel.textContent = "未設定";
+    } else {
+        effortInput.value = effortMap[level];
+        starLabel.textContent = labelMap[level];
+    }
+}
+
+stars.forEach(star => {
+    star.addEventListener("click", () => {
+        const level = Number(star.dataset.value);
+        setStars(level);
+    });
+});
+
+const initialLevel = getInitialLevel(effortInput.value);
+setStars(initialLevel);
+</script>
 
 {% endblock %}
