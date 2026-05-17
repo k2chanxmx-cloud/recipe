@@ -311,7 +311,7 @@ def shopping_list():
     cur = conn.cursor()
 
     cur.execute("""
-        SELECT mp.plan_date, r.title, r.ingredients
+        SELECT r.title, r.ingredients
         FROM meal_plans mp
         JOIN recipes r ON mp.recipe_id = r.id
         WHERE mp.plan_date >= %s
@@ -324,7 +324,31 @@ def shopping_list():
     cur.close()
     conn.close()
 
-    return render_template("shopping_list.html", rows=rows)
+    ingredient_map = {}
+
+    for row in rows:
+        ingredients_text = row["ingredients"] or ""
+
+        lines = ingredients_text.splitlines()
+
+        for line in lines:
+            ingredient = line.strip()
+
+            if not ingredient:
+                continue
+
+            if ingredient not in ingredient_map:
+                ingredient_map[ingredient] = 1
+            else:
+                ingredient_map[ingredient] += 1
+
+    sorted_ingredients = sorted(ingredient_map.items())
+
+    return render_template(
+        "shopping_list.html",
+        ingredients=sorted_ingredients,
+        rows=rows
+    )
 
 
 if __name__ == "__main__":

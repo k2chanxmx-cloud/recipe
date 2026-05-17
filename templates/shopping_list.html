@@ -3,15 +3,41 @@
 
 <h2>買い物リスト</h2>
 
+<div class="shopping-card">
+
+    {% if ingredients %}
+
+        {% for ingredient, count in ingredients %}
+        <label class="shopping-item">
+            <input type="checkbox">
+
+            <div class="shopping-text">
+                {{ ingredient }}
+
+                {% if count > 1 %}
+                <span class="shopping-count">×{{ count }}</span>
+                {% endif %}
+            </div>
+        </label>
+        {% endfor %}
+
+    {% else %}
+
+        <p>今週の献立がまだありません。</p>
+
+    {% endif %}
+
+</div>
+
+<h3>今週の献立</h3>
+
 <div class="card-list">
     {% for row in rows %}
     <div class="card">
         <div class="card-title">{{ row.title }}</div>
-        <div class="small">{{ row.plan_date }}</div>
+
         <pre>{{ row.ingredients }}</pre>
     </div>
-    {% else %}
-    <p>献立がまだ登録されていません。</p>
     {% endfor %}
 </div>
 
