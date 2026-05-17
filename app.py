@@ -1,10 +1,15 @@
 from flask import Flask, render_template, request, redirect, url_for
-import sqlite3
+import os
+import psycopg2
+import psycopg2.extras
 from datetime import date, timedelta
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
 
-DB_NAME = "recipes.db"
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
 CATEGORIES = [
     "シチュー・カレー系",
@@ -28,48 +33,13 @@ EFFORT_LEVELS = [
 
 
 def get_conn():
-    conn = sqlite3.connect(DB_NAME)
-    conn.row_factory = sqlite3.Row
-    return conn
+    if not DATABASE_URL:
+        raise RuntimeError("DATABASE_URL が設定されていません。.env または Render の環境変数を確認してください。")
 
-
-def init_db():
-    conn = get_conn()
-    cur = conn.cursor()
-
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS recipes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT NOT NULL,
-            category TEXT NOT NULL DEFAULT '未分類',
-            ingredients TEXT,
-            steps TEXT,
-            time_minutes INTEGER,
-            effort_level TEXT,
-            is_two_days INTEGER DEFAULT 0,
-            husband_favorite INTEGER DEFAULT 0,
-            memo TEXT,
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS meal_plans (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            plan_date TEXT NOT NULL,
-            recipe_id INTEGER,
-            note TEXT,
-            FOREIGN KEY(recipe_id) REFERENCES recipes(id)
-        )
-    """)
-
-    conn.commit()
-    conn.close()
-
-
-@app.before_request
-def before_request():
-    init_db()
+    return psycopg2.connect(
+        DATABASE_URL,
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
 
 
 @app.route("/")
@@ -84,16 +54,19 @@ def index():
     params = []
 
     if keyword:
-        sql += " AND title LIKE ?"
+        sql += " AND title ILIKE %s"
         params.append(f"%{keyword}%")
 
     if category:
-        sql += " AND category = ?"
+        sql += " AND category = %s"
         params.append(category)
 
     sql += " ORDER BY category, title"
 
-    recipes = cur.execute(sql, params).fetchall()
+    cur.execute(sql, params)
+    recipes = cur.fetchall()
+
+    cur.close()
     conn.close()
 
     return render_template(
@@ -109,26 +82,36 @@ def index():
 def recipe_new():
     if request.method == "POST":
         title = request.form.get("title")
-        category = request.form.get("category")
+        category = request.form.get("category") or "未分類"
         ingredients = request.form.get("ingredients")
         steps = request.form.get("steps")
         time_minutes = request.form.get("time_minutes") or None
         effort_level = request.form.get("effort_level")
-        is_two_days = 1 if request.form.get("is_two_days") else 0
-        husband_favorite = 1 if request.form.get("husband_favorite") else 0
+        is_two_days = True if request.form.get("is_two_days") else False
+        husband_favorite = True if request.form.get("husband_favorite") else False
         memo = request.form.get("memo")
 
         conn = get_conn()
         cur = conn.cursor()
+
         cur.execute("""
             INSERT INTO recipes
             (title, category, ingredients, steps, time_minutes, effort_level, is_two_days, husband_favorite, memo)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (
-            title, category, ingredients, steps, time_minutes,
-            effort_level, is_two_days, husband_favorite, memo
+            title,
+            category,
+            ingredients,
+            steps,
+            time_minutes,
+            effort_level,
+            is_two_days,
+            husband_favorite,
+            memo
         ))
+
         conn.commit()
+        cur.close()
         conn.close()
 
         return redirect(url_for("index"))
@@ -144,7 +127,12 @@ def recipe_new():
 @app.route("/recipes/<int:recipe_id>")
 def recipe_detail(recipe_id):
     conn = get_conn()
-    recipe = conn.execute("SELECT * FROM recipes WHERE id = ?", (recipe_id,)).fetchone()
+    cur = conn.cursor()
+
+    cur.execute("SELECT * FROM recipes WHERE id = %s", (recipe_id,))
+    recipe = cur.fetchone()
+
+    cur.close()
     conn.close()
 
     if recipe is None:
@@ -156,37 +144,59 @@ def recipe_detail(recipe_id):
 @app.route("/recipes/<int:recipe_id>/edit", methods=["GET", "POST"])
 def recipe_edit(recipe_id):
     conn = get_conn()
-    recipe = conn.execute("SELECT * FROM recipes WHERE id = ?", (recipe_id,)).fetchone()
+    cur = conn.cursor()
+
+    cur.execute("SELECT * FROM recipes WHERE id = %s", (recipe_id,))
+    recipe = cur.fetchone()
 
     if recipe is None:
+        cur.close()
         conn.close()
         return "レシピが見つかりません", 404
 
     if request.method == "POST":
         title = request.form.get("title")
-        category = request.form.get("category")
+        category = request.form.get("category") or "未分類"
         ingredients = request.form.get("ingredients")
         steps = request.form.get("steps")
         time_minutes = request.form.get("time_minutes") or None
         effort_level = request.form.get("effort_level")
-        is_two_days = 1 if request.form.get("is_two_days") else 0
-        husband_favorite = 1 if request.form.get("husband_favorite") else 0
+        is_two_days = True if request.form.get("is_two_days") else False
+        husband_favorite = True if request.form.get("husband_favorite") else False
         memo = request.form.get("memo")
 
-        conn.execute("""
+        cur.execute("""
             UPDATE recipes
-            SET title=?, category=?, ingredients=?, steps=?, time_minutes=?,
-                effort_level=?, is_two_days=?, husband_favorite=?, memo=?
-            WHERE id=?
+            SET title = %s,
+                category = %s,
+                ingredients = %s,
+                steps = %s,
+                time_minutes = %s,
+                effort_level = %s,
+                is_two_days = %s,
+                husband_favorite = %s,
+                memo = %s
+            WHERE id = %s
         """, (
-            title, category, ingredients, steps, time_minutes,
-            effort_level, is_two_days, husband_favorite, memo, recipe_id
+            title,
+            category,
+            ingredients,
+            steps,
+            time_minutes,
+            effort_level,
+            is_two_days,
+            husband_favorite,
+            memo,
+            recipe_id
         ))
+
         conn.commit()
+        cur.close()
         conn.close()
 
         return redirect(url_for("recipe_detail", recipe_id=recipe_id))
 
+    cur.close()
     conn.close()
 
     return render_template(
@@ -200,9 +210,14 @@ def recipe_edit(recipe_id):
 @app.route("/recipes/<int:recipe_id>/delete", methods=["POST"])
 def recipe_delete(recipe_id):
     conn = get_conn()
-    conn.execute("DELETE FROM recipes WHERE id = ?", (recipe_id,))
+    cur = conn.cursor()
+
+    cur.execute("DELETE FROM recipes WHERE id = %s", (recipe_id,))
+
     conn.commit()
+    cur.close()
     conn.close()
+
     return redirect(url_for("index"))
 
 
@@ -216,33 +231,53 @@ def meal_plan():
         cur = conn.cursor()
 
         for i in range(7):
-            d = (start_date + timedelta(days=i)).isoformat()
+            d = start_date + timedelta(days=i)
+            plan_date = d.isoformat()
             recipe_id = request.form.get(f"recipe_{i}") or None
             note = request.form.get(f"note_{i}")
 
-            cur.execute("DELETE FROM meal_plans WHERE plan_date = ?", (d,))
             cur.execute("""
                 INSERT INTO meal_plans (plan_date, recipe_id, note)
-                VALUES (?, ?, ?)
-            """, (d, recipe_id, note))
+                VALUES (%s, %s, %s)
+                ON CONFLICT (plan_date)
+                DO UPDATE SET
+                    recipe_id = EXCLUDED.recipe_id,
+                    note = EXCLUDED.note
+            """, (plan_date, recipe_id, note))
 
         conn.commit()
+        cur.close()
         conn.close()
+
         return redirect(url_for("meal_plan"))
 
     conn = get_conn()
-    recipes = conn.execute("SELECT * FROM recipes ORDER BY category, title").fetchall()
-    plans = conn.execute("""
+    cur = conn.cursor()
+
+    cur.execute("SELECT * FROM recipes ORDER BY category, title")
+    recipes = cur.fetchall()
+
+    end_date = start_date + timedelta(days=7)
+
+    cur.execute("""
         SELECT mp.*, r.title AS recipe_title
         FROM meal_plans mp
         LEFT JOIN recipes r ON mp.recipe_id = r.id
-    """).fetchall()
+        WHERE mp.plan_date >= %s
+          AND mp.plan_date < %s
+        ORDER BY mp.plan_date
+    """, (start_date.isoformat(), end_date.isoformat()))
+
+    plans = cur.fetchall()
+
+    cur.close()
     conn.close()
 
-    plan_map = {p["plan_date"]: p for p in plans}
+    plan_map = {str(p["plan_date"]): p for p in plans}
 
     week = []
     weekdays = ["月", "火", "水", "木", "金", "土", "日"]
+
     for i in range(7):
         d = start_date + timedelta(days=i)
         week.append({
@@ -257,13 +292,25 @@ def meal_plan():
 
 @app.route("/shopping-list")
 def shopping_list():
+    today = date.today()
+    start_date = today - timedelta(days=today.weekday())
+    end_date = start_date + timedelta(days=7)
+
     conn = get_conn()
-    rows = conn.execute("""
+    cur = conn.cursor()
+
+    cur.execute("""
         SELECT mp.plan_date, r.title, r.ingredients
         FROM meal_plans mp
         JOIN recipes r ON mp.recipe_id = r.id
+        WHERE mp.plan_date >= %s
+          AND mp.plan_date < %s
         ORDER BY mp.plan_date
-    """).fetchall()
+    """, (start_date.isoformat(), end_date.isoformat()))
+
+    rows = cur.fetchall()
+
+    cur.close()
     conn.close()
 
     return render_template("shopping_list.html", rows=rows)
