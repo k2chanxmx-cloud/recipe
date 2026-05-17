@@ -4,13 +4,25 @@
 <h2>買い物リスト</h2>
 
 <form method="get" class="form-card date-select-card">
+
     <label>開始日</label>
-    <input type="date" name="start_date" value="{{ start_date.isoformat() }}">
+    <input
+        type="date"
+        name="start_date"
+        value="{{ start_date.isoformat() }}"
+    >
 
     <label>終了日</label>
-    <input type="date" name="end_date" value="{{ end_date.isoformat() }}">
+    <input
+        type="date"
+        name="end_date"
+        value="{{ end_date.isoformat() }}"
+    >
 
-    <button type="submit">この期間で買い物候補を作成</button>
+    <button type="submit">
+        この期間で買い物候補を作成
+    </button>
+
 </form>
 
 <div class="shopping-card">
@@ -21,41 +33,84 @@
 
         {% for ingredient, count in ingredients %}
         <label class="shopping-item">
-            <input type="checkbox" class="buy-check">
+
+            <input
+                type="checkbox"
+                class="buy-check"
+            >
 
             <div class="shopping-text">
-                <span class="ingredient-name">{{ ingredient }}</span>
+
+                <span class="ingredient-name">
+                    {{ ingredient }}
+                </span>
 
                 {% if count > 1 %}
-                <span class="shopping-count">×{{ count }}</span>
+                <span class="shopping-count">
+                    ×{{ count }}
+                </span>
                 {% endif %}
+
             </div>
+
         </label>
         {% endfor %}
 
     {% else %}
+
         <p>この期間の献立がまだありません。</p>
+
     {% endif %}
 
 </div>
 
 {% if ingredients %}
-<form method="post" action="{{ url_for('shopping_list_save') }}" class="form-card">
+<form
+    method="post"
+    action="{{ url_for('shopping_list_save') }}"
+    class="form-card"
+>
 
     <h3>保存する買い物リスト</h3>
 
-    <input type="hidden" name="start_date" value="{{ start_date.isoformat() }}">
-    <input type="hidden" name="end_date" value="{{ end_date.isoformat() }}">
+    <input
+        type="hidden"
+        name="start_date"
+        value="{{ start_date.isoformat() }}"
+    >
 
-    <button type="button" onclick="makeShoppingText()">未チェックだけ反映</button>
+    <input
+        type="hidden"
+        name="end_date"
+        value="{{ end_date.isoformat() }}"
+    >
+
+    <button
+        type="button"
+        onclick="makeShoppingText()"
+    >
+        未チェックだけ反映
+    </button>
 
     <label>買うもの</label>
-    <textarea id="items" name="items" rows="10"></textarea>
+
+    <textarea
+        id="items"
+        name="items"
+        rows="10"
+    ></textarea>
 
     <label>メモ</label>
-    <textarea name="memo" rows="3" placeholder="例：業務スーパーで買う、肉は冷凍する など"></textarea>
 
-    <button type="submit">この内容で保存</button>
+    <textarea
+        name="memo"
+        rows="3"
+        placeholder="例：業務スーパーで買う、肉は冷凍する など"
+    ></textarea>
+
+    <button type="submit">
+        この内容で保存
+    </button>
 
 </form>
 {% endif %}
@@ -63,44 +118,94 @@
 <h3>保存済みリスト</h3>
 
 <div class="card-list">
+
     {% for list in saved_lists %}
-    <div class="card">
-        <div class="card-title">
-            {{ list.start_date }} 〜 {{ list.end_date }}
-        </div>
+    <form
+        method="post"
+        action="{{ url_for('shopping_list_update', list_id=list['id']) }}"
+        class="card"
+    >
 
-        {% if list.memo %}
-        <div class="small">{{ list.memo }}</div>
-        {% endif %}
+        <label>開始日</label>
+        <input
+            type="date"
+            name="start_date"
+            value="{{ list['start_date'] }}"
+        >
 
-        <pre>{{ list.items }}</pre>
-    </div>
+        <label>終了日</label>
+        <input
+            type="date"
+            name="end_date"
+            value="{{ list['end_date'] }}"
+        >
+
+        <label>買うもの</label>
+        <textarea
+            name="items"
+            rows="8"
+        >{{ list["items"] }}</textarea>
+
+        <label>メモ</label>
+        <textarea
+            name="memo"
+            rows="3"
+        >{{ list["memo"] or "" }}</textarea>
+
+        <button type="submit">
+            編集内容を保存
+        </button>
+
+    </form>
+
     {% else %}
+
     <p>保存済みの買い物リストはまだありません。</p>
+
     {% endfor %}
+
 </div>
 
 <h3>対象の献立</h3>
 
 <div class="card-list">
+
     {% for row in rows %}
     <div class="card">
-        <div class="small">{{ row.plan_date }}</div>
-        <div class="card-title">{{ row.title }}</div>
-        <pre>{{ row.ingredients }}</pre>
+
+        <div class="small">
+            {{ row["plan_date"] }}
+        </div>
+
+        <div class="card-title">
+            {{ row["title"] }}
+        </div>
+
+        <pre>{{ row["ingredients"] }}</pre>
+
     </div>
     {% endfor %}
+
 </div>
 
 <script>
 function makeShoppingText() {
+
     const items = document.querySelectorAll(".shopping-item");
     const lines = [];
 
     items.forEach(item => {
-        const checkbox = item.querySelector(".buy-check");
-        const name = item.querySelector(".ingredient-name").textContent.trim();
-        const countEl = item.querySelector(".shopping-count");
+
+        const checkbox =
+            item.querySelector(".buy-check");
+
+        const name =
+            item.querySelector(".ingredient-name")
+            .textContent
+            .trim();
+
+        const countEl =
+            item.querySelector(".shopping-count");
 
         let text = name;
 
@@ -111,9 +216,11 @@ function makeShoppingText() {
         if (!checkbox.checked) {
             lines.push(text);
         }
+
     });
 
-    document.getElementById("items").value = lines.join("\n");
+    document.getElementById("items").value =
+        lines.join("\n");
 }
 
 window.addEventListener("DOMContentLoaded", () => {

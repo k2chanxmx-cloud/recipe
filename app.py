@@ -405,5 +405,41 @@ def shopping_list_save():
     ))
 
 
+@app.route("/shopping-list/<int:list_id>/update", methods=["POST"])
+def shopping_list_update(list_id):
+    start_date = request.form.get("start_date")
+    end_date = request.form.get("end_date")
+    items = request.form.get("items")
+    memo = request.form.get("memo")
+
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute("""
+        UPDATE shopping_lists
+        SET start_date = %s,
+            end_date = %s,
+            items = %s,
+            memo = %s
+        WHERE id = %s
+    """, (
+        start_date,
+        end_date,
+        items,
+        memo,
+        list_id
+    ))
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return redirect(url_for(
+        "shopping_list",
+        start_date=start_date,
+        end_date=end_date
+    ))
+
+
 if __name__ == "__main__":
     app.run(debug=True)
