@@ -303,19 +303,30 @@ def meal_plan():
 
 @app.route("/shopping-list")
 def shopping_list():
+    start_param = request.args.get("start_date")
+    end_param = request.args.get("end_date")
+
     today = date.today()
-    start_date = today - timedelta(days=today.weekday())
-    end_date = start_date + timedelta(days=7)
+
+    if start_param:
+        start_date = date.fromisoformat(start_param)
+    else:
+        start_date = today
+
+    if end_param:
+        end_date = date.fromisoformat(end_param)
+    else:
+        end_date = start_date + timedelta(days=6)
 
     conn = get_conn()
     cur = conn.cursor()
 
     cur.execute("""
-        SELECT r.title, r.ingredients
+        SELECT mp.plan_date, r.title, r.ingredients
         FROM meal_plans mp
         JOIN recipes r ON mp.recipe_id = r.id
         WHERE mp.plan_date >= %s
-          AND mp.plan_date < %s
+          AND mp.plan_date <= %s
         ORDER BY mp.plan_date
     """, (start_date.isoformat(), end_date.isoformat()))
 
@@ -328,7 +339,6 @@ def shopping_list():
 
     for row in rows:
         ingredients_text = row["ingredients"] or ""
-
         lines = ingredients_text.splitlines()
 
         for line in lines:
@@ -337,17 +347,16 @@ def shopping_list():
             if not ingredient:
                 continue
 
-            if ingredient not in ingredient_map:
-                ingredient_map[ingredient] = 1
-            else:
-                ingredient_map[ingredient] += 1
+            ingredient_map[ingredient] = ingredient_map.get(ingredient, 0) + 1
 
-    sorted_ingredients = sorted(ingredient_map.items())
+    ingredients = sorted(ingredient_map.items())
 
     return render_template(
         "shopping_list.html",
-        ingredients=sorted_ingredients,
-        rows=rows
+        ingredients=ingredients,
+        rows=rows,
+        start_date=start_date,
+        end_date=end_date
     )
 
 

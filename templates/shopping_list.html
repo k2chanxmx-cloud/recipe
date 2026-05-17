@@ -3,6 +3,16 @@
 
 <h2>買い物リスト</h2>
 
+<form method="get" class="form-card date-select-card">
+    <label>開始日</label>
+    <input type="date" name="start_date" value="{{ start_date.isoformat() }}">
+
+    <label>終了日</label>
+    <input type="date" name="end_date" value="{{ end_date.isoformat() }}">
+
+    <button type="submit">この期間で買い物リスト作成</button>
+</form>
+
 <div class="shopping-card">
 
     {% if ingredients %}
@@ -22,20 +32,18 @@
         {% endfor %}
 
     {% else %}
-
-        <p>今週の献立がまだありません。</p>
-
+        <p>この期間の献立がまだありません。</p>
     {% endif %}
 
 </div>
 
-<h3>今週の献立</h3>
+<h3>対象の献立</h3>
 
 <div class="card-list">
     {% for row in rows %}
     <div class="card">
+        <div class="small">{{ row.plan_date }}</div>
         <div class="card-title">{{ row.title }}</div>
-
         <pre>{{ row.ingredients }}</pre>
     </div>
     {% endfor %}
