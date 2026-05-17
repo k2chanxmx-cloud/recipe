@@ -1,9 +1,17 @@
 {% extends "base.html" %}
 {% block content %}
 
-<h2>今週の献立</h2>
+<h2>献立</h2>
+
+<form method="get" class="form-card date-select-card">
+    <label>開始日</label>
+    <input type="date" name="start_date" value="{{ start_date.isoformat() }}">
+    <button type="submit">この日から7日分を見る</button>
+</form>
 
 <form method="post" class="form-card">
+
+    <input type="hidden" name="start_date" value="{{ start_date.isoformat() }}">
 
     {% set ns = namespace(categories=[]) %}
 
@@ -21,12 +29,10 @@
         </div>
 
         <select name="recipe_{{ day.index }}">
-
             <option value="">未定</option>
 
             {% for category in ns.categories %}
             <optgroup label="{{ category }}">
-
                 {% for r in recipes %}
                     {% if r.category == category %}
                     <option value="{{ r.id }}"
@@ -35,10 +41,8 @@
                     </option>
                     {% endif %}
                 {% endfor %}
-
             </optgroup>
             {% endfor %}
-
         </select>
 
         <input
@@ -52,7 +56,6 @@
     {% endfor %}
 
     <button type="submit">献立を保存</button>
-
 </form>
 
 {% endblock %}

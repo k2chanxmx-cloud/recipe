@@ -224,8 +224,15 @@ def recipe_delete(recipe_id):
 
 @app.route("/meal-plan", methods=["GET", "POST"])
 def meal_plan():
-    today = date.today()
-    start_date = today - timedelta(days=today.weekday())
+    selected_start = request.args.get("start_date") or request.form.get("start_date")
+
+    if selected_start:
+        start_date = date.fromisoformat(selected_start)
+    else:
+        today = date.today()
+        start_date = today - timedelta(days=today.weekday())
+
+    end_date = start_date + timedelta(days=7)
 
     if request.method == "POST":
         conn = get_conn()
@@ -250,15 +257,13 @@ def meal_plan():
         cur.close()
         conn.close()
 
-        return redirect(url_for("meal_plan"))
+        return redirect(url_for("meal_plan", start_date=start_date.isoformat()))
 
     conn = get_conn()
     cur = conn.cursor()
 
     cur.execute("SELECT * FROM recipes ORDER BY category, title")
     recipes = cur.fetchall()
-
-    end_date = start_date + timedelta(days=7)
 
     cur.execute("""
         SELECT mp.*, r.title AS recipe_title
@@ -284,11 +289,16 @@ def meal_plan():
         week.append({
             "index": i,
             "date": d,
-            "weekday": weekdays[i],
+            "weekday": weekdays[d.weekday()],
             "plan": plan_map.get(d.isoformat())
         })
 
-    return render_template("meal_plan.html", week=week, recipes=recipes)
+    return render_template(
+        "meal_plan.html",
+        week=week,
+        recipes=recipes,
+        start_date=start_date
+    )
 
 
 @app.route("/shopping-list")
