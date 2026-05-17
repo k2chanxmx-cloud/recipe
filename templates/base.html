@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+
+    <title>献立アプリ</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- PWA -->
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="theme-color" content="#ffb6c8">
+
+    <!-- iPhone対応 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="献立">
+
+    <!-- アイコン -->
+    <link rel="apple-touch-icon" href="/static/icon-192.png">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<header>
+    <h1>🍳 献立アプリ</h1>
+
+    <nav>
+        <a href="{{ url_for('index') }}">レシピ</a>
+        <a href="{{ url_for('recipe_new') }}">追加</a>
+        <a href="{{ url_for('meal_plan') }}">献立</a>
+        <a href="{{ url_for('shopping_list') }}">買い物</a>
+    </nav>
+</header>
+
+<main>
+    {% block content %}{% endblock %}
+</main>
+
+<script>
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/static/sw.js')
+        .then(() => {
+            console.log('Service Worker 登録成功');
+        })
+        .catch(error => {
+            console.log('Service Worker 登録失敗:', error);
+        });
+}
+</script>
+
+</body>
+</html>

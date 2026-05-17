@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2>{% if recipe %}レシピ編集{% else %}レシピ追加{% endif %}</h2>
+
+<form method="post" class="form-card">
+
+    <label>料理名</label>
+    <input type="text" name="title" required value="{{ recipe.title if recipe else '' }}">
+
+    <label>カテゴリー</label>
+    <select name="category">
+        {% for c in categories %}
+            <option value="{{ c }}" {% if recipe and recipe.category == c %}selected{% endif %}>{{ c }}</option>
+        {% endfor %}
+    </select>
+
+    <label>材料</label>
+    <textarea name="ingredients" rows="6" placeholder="豚こま 300g&#10;キャベツ 1/4&#10;焼肉のタレ">{{ recipe.ingredients if recipe else '' }}</textarea>
+
+    <label>作り方</label>
+    <textarea name="steps" rows="8" placeholder="1. 材料を切る&#10;2. 炒める&#10;3. 味付けする">{{ recipe.steps if recipe else '' }}</textarea>
+
+    <label>所要時間（分）</label>
+    <input type="number" name="time_minutes" value="{{ recipe.time_minutes if recipe else '' }}">
+
+    <label>やる気レベル</label>
+    <select name="effort_level">
+        <option value="">未設定</option>
+        {% for e in effort_levels %}
+            <option value="{{ e }}" {% if recipe and recipe.effort_level == e %}selected{% endif %}>{{ e }}</option>
+        {% endfor %}
+    </select>
+
+    <label class="check">
+        <input type="checkbox" name="is_two_days" {% if recipe and recipe.is_two_days %}checked{% endif %}>
+        2日食べられる
+    </label>
+
+    <label class="check">
+        <input type="checkbox" name="husband_favorite" {% if recipe and recipe.husband_favorite %}checked{% endif %}>
+        旦那お気に入り
+    </label>
+
+    <label>メモ</label>
+    <textarea name="memo" rows="4">{{ recipe.memo if recipe else '' }}</textarea>
+
+    <button type="submit">保存</button>
+</form>
+
+{% endblock %}

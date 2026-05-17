@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2>レシピ一覧</h2>
+
+<form method="get" class="search-box">
+    <input type="text" name="keyword" placeholder="料理名で検索" value="{{ keyword }}">
+
+    <select name="category">
+        <option value="">全カテゴリー</option>
+        {% for c in categories %}
+            <option value="{{ c }}" {% if selected_category == c %}selected{% endif %}>{{ c }}</option>
+        {% endfor %}
+    </select>
+
+    <button type="submit">検索</button>
+</form>
+
+<div class="card-list">
+    {% for r in recipes %}
+    <a class="card" href="{{ url_for('recipe_detail', recipe_id=r.id) }}">
+        <div class="card-title">{{ r.title }}</div>
+        <div class="tag">{{ r.category }}</div>
+
+        {% if r.effort_level %}
+            <div class="small">{{ r.effort_level }}</div>
+        {% endif %}
+
+        {% if r.is_two_days %}
+            <div class="badge">2日料理</div>
+        {% endif %}
+
+        {% if r.husband_favorite %}
+            <div class="badge">旦那お気に入り</div>
+        {% endif %}
+    </a>
+    {% else %}
+    <p>まだレシピがありません。</p>
+    {% endfor %}
+</div>
+
+{% endblock %}

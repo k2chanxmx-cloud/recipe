@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="detail-card">
+    <h2>{{ recipe.title }}</h2>
+
+    <div class="tag">{{ recipe.category }}</div>
+
+    {% if recipe.effort_level %}
+        <p>{{ recipe.effort_level }}</p>
+    {% endif %}
+
+    {% if recipe.time_minutes %}
+        <p>⏱ {{ recipe.time_minutes }}分</p>
+    {% endif %}
+
+    {% if recipe.is_two_days %}
+        <p class="badge">2日食べられる</p>
+    {% endif %}
+
+    {% if recipe.husband_favorite %}
+        <p class="badge">旦那お気に入り</p>
+    {% endif %}
+
+    <h3>材料</h3>
+    <pre>{{ recipe.ingredients }}</pre>
+
+    <h3>作り方</h3>
+    <pre>{{ recipe.steps }}</pre>
+
+    {% if recipe.memo %}
+    <h3>メモ</h3>
+    <pre>{{ recipe.memo }}</pre>
+    {% endif %}
+
+    <div class="actions">
+        <a class="button" href="{{ url_for('recipe_edit', recipe_id=recipe.id) }}">編集</a>
+
+        <form method="post" action="{{ url_for('recipe_delete', recipe_id=recipe.id) }}" onsubmit="return confirm('削除していい？');">
+            <button class="danger" type="submit">削除</button>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
